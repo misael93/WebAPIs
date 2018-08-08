@@ -4,16 +4,20 @@ var TodoController            = require('./controllers/todos'),
     passport                  = require('passport'),
     multer                    = require('multer');
     ArtistController          = require('./controllers/artists');
+    AlbumController           = require('./controllers/albums');
+    SongController            = require('./controllers/songs');
 
 var requireAuth = passport.authenticate('jwt', {session: false}),
     requireLogin = passport.authenticate('local', {session: false});
 
 module.exports = (app) => {
 
-    var apiRoutes     = express.Router(),
-        authRoutes    = express.Router(),
-        todoRoutes    = express.Router(),
-        artistRoutes  = express.Router();
+    var apiRoutes      = express.Router(),
+        authRoutes     = express.Router(),
+        todoRoutes     = express.Router(),
+        artistRoutes   = express.Router();
+        albumRoutes    = express.Router();
+        songRoutes     = express.Router();
 
     // Auth Routes
     apiRoutes.use('/auth', authRoutes);
@@ -28,12 +32,28 @@ module.exports = (app) => {
     todoRoutes.delete('/:todo_id', TodoController.deleteTodo);
 
     // Artist Routes
-    apiRoutes.use('/artists', artistRoutes)
+    apiRoutes.use('/artists', artistRoutes);
     artistRoutes.get('/', ArtistController.getArtists);
     artistRoutes.post('/', ArtistController.createArtist);
     artistRoutes.get('/:identifier', ArtistController.getArtist);
     artistRoutes.put('/:identifier', ArtistController.updateArtist);
     artistRoutes.delete('/:identifier', ArtistController.deleteArtist);
+
+    // Album Routes
+    apiRoutes.use('/albums', albumRoutes);
+    albumRoutes.get('/', AlbumController.getAlbums);
+    albumRoutes.post('/', AlbumController.createAlbum);
+    albumRoutes.get('/:identifier', AlbumController.getAlbum);
+    albumRoutes.put('/:identifier', AlbumController.updateAlbum);
+    albumRoutes.delete('/:identifier', AlbumController.deleteAlbum);
+
+    // Song Routes
+    apiRoutes.use('/songs', songRoutes);
+    songRoutes.get('/', SongController.getSongs);
+    songRoutes.post('/', SongController.createSong);
+    songRoutes.get('/:identifier', SongController.getSong);
+    songRoutes.put('/:identifier', SongController.updateSong);
+    songRoutes.delete('/:identifier', SongController.deleteSong);
 
     // Set up routes
     app.use('/api/v1', apiRoutes);

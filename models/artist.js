@@ -3,23 +3,14 @@ var mongoose = require("mongoose");
 var ArtistSchema = new mongoose.Schema({
     identifier: {
         type: String,
-        required: true,
-        index: { unique: true }
+        required: true
     },
     name: {
         type: String,
-        required: true,
-        index: { unique: true }
+        required: true
     },
-    debut: {
-        type: Date
-    },
-    genres: {
-        type: [String]
-    },
-    images: {
-        type: [String]
-    }
+    genres: [String],
+    images: [String]
 }, {
     timestamps: true
 });
