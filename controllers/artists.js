@@ -24,7 +24,7 @@ exports.createArtist = (req, res, next) => {
         return res.status(400).send({ error: "You must enter a name" });
     }
 
-    var identifier = name.replace(/[^\w]/g, "").toLowerCase();
+    var identifier = getIdentifier(name);
 
     Artist.findOne({ identifier: identifier },
         (err, artist) => {
@@ -60,7 +60,7 @@ exports.createArtist = (req, res, next) => {
 
 exports.getArtist = (req, res, next) => {
 
-    identifier = req.params.identifier;
+    var identifier = req.params.identifier;
 
     if (!identifier) {
         return res.status(400).send({ error: "You must enter an identifier" });
@@ -85,28 +85,62 @@ exports.getArtist = (req, res, next) => {
 
 exports.updateArtist = (req, res, next) => {
 
-    identifier = req.params.identifier;
+    var identifier = req.params.identifier;
+    var name = req.body.name;
+    var genres = req.body.genres;
+    var images = req.body.images;
 
     if (!identifier) {
         return res.status(400).send({ error: "You must enter an identifier" });
     }
 
-    Artist.findOneAndUpdate({ identifier: identifier },
-        req.body,
-        { new: true, runValidators: true },
+    if (!name) {
+        return res.status(400).send({ error: "You must enter a name" });
+    }
+
+    var newIdentifier = getIdentifier(name);
+
+    Artist.findOne(
+        {
+            $and: [
+                { identifier: { $ne: identifier } },
+                { identifier: newIdentifier }
+            ]
+        },
         (err, artist) => {
 
             if (err) {
                 return res.status(400).send(err);
             }
 
-            if (!artist) {
-                return res.status(404).send({ error: "Artist not found" });
+            if (artist) {
+                return res.status(409).send({ error: "This artist already exists" });
             }
 
-            res.status(200).json(artist);
+            Artist.findOneAndUpdate({ identifier: identifier },
+                {
+                    identifier: newIdentifier,
+                    name: name,
+                    genres: genres,
+                    images: images
+                },
+                { new: true, runValidators: true },
+                (err, artist) => {
 
-        });
+                    if (err) {
+                        return res.status(400).send(err);
+                    }
+
+                    if (!artist) {
+                        return res.status(404).send({ error: "Artist not found" });
+                    }
+
+                    res.status(200).json(artist);
+
+                });
+
+        }
+    )
 
 }
 
@@ -133,4 +167,8 @@ exports.deleteArtist = (req, res, next) => {
 
         });
 
+}
+
+function getIdentifier(name) {
+    return name.replace(/[^\w]/g, "").toLowerCase();
 }

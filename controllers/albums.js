@@ -10,7 +10,7 @@ exports.getAlbums = (req, res, next) => {
             if (err) {
                 res.send(err);
             }
-    
+
             res.status(200).json(albums);
 
         });
@@ -20,7 +20,6 @@ exports.getAlbums = (req, res, next) => {
 exports.createAlbum = (req, res, next) => {
 
     var name = req.body.name;
-    var identifier = req.body.identifier;
     var releaseDate = req.body.releaseDate;
     var images = req.body.images;
     var artistId = req.body.artistId;
@@ -33,7 +32,7 @@ exports.createAlbum = (req, res, next) => {
         return res.status(400).send({ error: "You must enter an artist Id" });
     }
 
-    var identifier = name.replace(/[^\w]/g, "").toLowerCase();
+    var identifier = getIdentifier(name);
 
     Album.findOne({ identifier: identifier },
         (err, album) => {
@@ -59,7 +58,7 @@ exports.createAlbum = (req, res, next) => {
 
                     var album = new Album({
                         identifier: identifier,
-                        name: req.body.name,
+                        name: name,
                         releaseDate: releaseDate,
                         images: images,
                         _artist: artistId
@@ -80,7 +79,7 @@ exports.createAlbum = (req, res, next) => {
 
 exports.getAlbum = (req, res, next) => {
 
-    identifier = req.params.identifier;
+    var identifier = req.params.identifier;
 
     if (!identifier) {
         return res.status(400).send({ error: "You must enter an identifier" });
@@ -108,6 +107,8 @@ exports.updateAlbum = (req, res, next) => {
 
     var identifier = req.params.identifier;
     var name = req.body.name;
+    var releaseDate = req.body.releaseDate;
+    var images = req.body.images;
     var artistId = req.body.artistId;
 
     if (!identifier) {
@@ -133,22 +134,50 @@ exports.updateAlbum = (req, res, next) => {
                 return res.status(404).send({ error: "Artist not found" });
             }
 
-            Album.findOneAndUpdate({ identifier: identifier },
-                req.body,
-                { new: true, runValidators: true },
+            var newIdentifier = getIdentifier(name);
+
+            Album.findOne(
+                {
+                    $and: [
+                        { identifier: { $ne: identifier } },
+                        { identifier: newIdentifier }
+                    ]
+                },
                 (err, album) => {
 
                     if (err) {
                         return res.status(400).send(err);
                     }
 
-                    if (!album) {
-                        return res.status(404).send({ error: "Album not found" });
+                    if (album) {
+                        return res.status(409).send({ error: "This album already exists" });
                     }
 
-                    res.status(200).json(album);
+                    Album.findOneAndUpdate({ identifier: identifier },
+                        {
+                            identifier: newIdentifier,
+                            name: name,
+                            releaseDate: releaseDate,
+                            images: images,
+                            _artist: artistId
+                        },
+                        { new: true, runValidators: true },
+                        (err, album) => {
 
-                });
+                            if (err) {
+                                return res.status(400).send(err);
+                            }
+
+                            if (!album) {
+                                return res.status(404).send({ error: "Album not found" });
+                            }
+
+                            res.status(200).json(album);
+
+                        });
+
+                }
+            )
 
         });
 
@@ -177,4 +206,8 @@ exports.deleteAlbum = (req, res, next) => {
 
         });
 
+}
+
+function getIdentifier(name) {
+    return name.replace(/[^\w]/g, "").toLowerCase();
 }
